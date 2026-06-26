@@ -987,8 +987,6 @@ def make_specialist_response_normalizer(domain: str):
     return normalize_specialist_response
 
 
-
-
 def make_specialist_model_error_fallback(domain: str):
     """Return an ADK ``on_model_error_callback`` for one specialist domain.
 
@@ -1018,9 +1016,7 @@ def make_specialist_model_error_fallback(domain: str):
             return None
 
         try:
-            report, diagnostics = canonicalize_specialist_report(
-                spec, {}, callback_context.state
-            )
+            report, diagnostics = canonicalize_specialist_report(spec, {}, callback_context.state)
         except Exception as exc:
             callback_context.state[metadata_key] = {
                 "status": "failed",
@@ -1047,6 +1043,7 @@ def make_specialist_model_error_fallback(domain: str):
 
     recover_specialist_response.__name__ = f"recover_{domain}_specialist_response"
     return recover_specialist_response
+
 
 __all__ = [
     "SpecialistNormalizationError",

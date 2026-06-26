@@ -381,7 +381,9 @@ async def test_report_validator_accepts_all_canonicalized_specialist_reports() -
 
 
 @pytest.mark.asyncio
-async def test_report_validator_reconstructs_when_live_branch_has_evidence_but_no_output_key() -> None:
+async def test_report_validator_reconstructs_when_live_branch_has_evidence_but_no_output_key() -> (
+    None
+):
     """Live branches with successful MCP captures do not need a final JSON output."""
     state = _captured_state()
     for spec in _SPECS.values():
