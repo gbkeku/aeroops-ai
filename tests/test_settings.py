@@ -36,8 +36,21 @@ def test_settings_env_offline(monkeypatch) -> None:
 
 
 def test_settings_loads_explicit_env_file(tmp_path, monkeypatch) -> None:
-    """Prove that a project-style .env file activates offline mode."""
-    monkeypatch.delenv("AEROOPS_OFFLINE_DEMO", raising=False)
+    """Prove that a project-style .env file activates offline mode.
+
+    GitHub Actions sets AEROOPS_DB_PATH for the wider regression suite.
+    Real environment variables intentionally take precedence over .env files,
+    so this test must isolate itself from CI-level AeroOps variables before
+    validating the explicit env file.
+    """
+    for env_name in (
+        "AEROOPS_OFFLINE_DEMO",
+        "AEROOPS_MODEL",
+        "AEROOPS_DB_PATH",
+        "AEROOPS_GOOGLE_API_KEY",
+        "GOOGLE_API_KEY",
+    ):
+        monkeypatch.delenv(env_name, raising=False)
     env_file = tmp_path / ".env"
     env_file.write_text(
         "AEROOPS_OFFLINE_DEMO=1\n"
