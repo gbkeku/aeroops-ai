@@ -1,0 +1,88 @@
+name: AeroOps CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version-file: ".python-version"
+
+      - name: Install locked dependencies
+        run: uv sync --locked --all-groups
+
+      - name: Validate workflows and scan secrets
+        run: |
+          uv run python scripts/validate_workflows.py
+          uv run python scripts/validate_public_docs.py
+          uv run python scripts/secret_scanner.py
+
+      - name: Create temporary test database
+        run: uv run aeroops-init-db --reset --db-path "${{ runner.temp }}/aeroops.db"
+
+      - name: Verify committed synthetic database artifact
+        run: uv run python scripts/verify_db_artifact.py
+
+      - name: Check formatting and lint
+        run: |
+          uv run ruff format --check src tests scripts
+          uv run ruff check src tests scripts
+
+      - name: Run deterministic release tests
+        env:
+          AEROOPS_DB_PATH: ${{ runner.temp }}/aeroops.db
+        run: |
+          uv run pytest tests/test_settings.py -v
+          uv run pytest tests/test_db_bootstrap.py -v
+          uv run pytest tests/test_evaluation_cases.py -v
+          uv run pytest tests/test_ui_integration.py -v
+          uv run pytest tests/test_e2e_deterministic.py -v
+          uv run python scripts/smoke_test_mcp.py
+
+      - name: Run complete regression suite
+        env:
+          AEROOPS_DB_PATH: ${{ runner.temp }}/aeroops.db
+        run: |
+          mkdir -p .artifacts
+          uv run pytest tests/ -v -ra --junitxml=.artifacts/pytest.xml
+          uv run pytest tests/ -W error::ResourceWarning --junitxml=.artifacts/resource-warnings.xml
+
+      - name: Run Streamlit smoke tests
+        run: |
+          uv run python scripts/smoke_test.py
+          uv run python scripts/streamlit_process_smoke_test.py
+
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: aeroops-test-reports
+          path: .artifacts/*.xml
+          if-no-files-found: ignore

@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "aeroops-data-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "<ABSOLUTE_PROJECT_PATH>",
+        "run",
+        "aeroops-data-mcp"
+      ],
+      "env": {
+        "AEROOPS_DB_PATH": "<ABSOLUTE_PROJECT_PATH>/data/aeroops.db"
+      }
+    }
+  }
+}

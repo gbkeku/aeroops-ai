@@ -1,0 +1,46 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+
+# Environment variables and local secrets
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# IDE and editor state
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Tool caches and generated reports
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.pyright/
+.artifacts/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.log
+
+# SQLite databases: retain only the deterministic deployment artifact
+*.db
+!data/aeroops.db
+
+# OS files
+.DS_Store
+Thumbs.db
