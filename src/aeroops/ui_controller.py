@@ -41,6 +41,13 @@ def _run_async_sync(coro: Any) -> Any:
         return asyncio.run(coro)
 
 
+def _evidence_row_status(record_type: str, payload: dict[str, Any]) -> str:
+    """Return the presentation status for an evidence table row."""
+    if record_type == "schedule_dependency":
+        return "BLOCKING_LINK"
+    return str(payload.get("status") or "unknown").upper()
+
+
 def get_aircraft_options(db_path_override: str | None = None) -> list[str]:
     """Retrieve aircraft IDs available for selection."""
     if get_settings().offline_demo:
@@ -226,6 +233,8 @@ def _derive_result_from_catalog(
         )
         if rec_type.value == "parts_constraint":
             title = f"{payload.get('part_number')} - {payload.get('description')}"
+        elif rec_type.value == "schedule_dependency":
+            title = "Dependency link"
 
         # Determine date
         relevant_date = (
@@ -261,7 +270,7 @@ def _derive_result_from_catalog(
                 source_id=rec.source_id,
                 record_type=rec_type.value,
                 title=str(title),
-                status=str(payload.get("status") or "unknown"),
+                status=_evidence_row_status(rec_type.value, payload),
                 relevant_date=str(relevant_date),
                 originating_agent=originating_agent,
             )
