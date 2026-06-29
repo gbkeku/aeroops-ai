@@ -112,6 +112,27 @@ def test_ui_controller_live_integration(seeded_db, monkeypatch) -> None:
     for blocker in expected_blockers:
         assert blocker in blocker_types, f"Blocker type '{blocker}' not found in dependency edges"
 
+    expected_status_by_id = {
+        "MS-009-FTC": "AT_RISK",
+        "TEST-009-118": "ABORTED",
+        "TEST-009-121": "BLOCKED",
+        "DEF-009-042": "OPEN",
+        "PART-ACT-774": "AWAITING_DELIVERY",
+        "CR-184": "PENDING_REVIEW",
+        "MNT-009-015": "SCHEDULED",
+    }
+    evidence_status_by_id = {row.source_id: row.status for row in result.evidence_rows}
+    for source_id, expected_status in expected_status_by_id.items():
+        assert evidence_status_by_id[source_id] == expected_status
+
+    dependency_row_ids = {"DEP-009-001", "DEP-009-002", "DEP-009-003", "DEP-009-004"}
+    dependency_rows = [
+        row for row in result.evidence_rows if row.record_type == "schedule_dependency"
+    ]
+    assert {row.source_id for row in dependency_rows} == dependency_row_ids
+    assert all(row.status == "BLOCKING_LINK" for row in dependency_rows)
+    assert all(row.status != "UNKNOWN" for row in dependency_rows)
+
     # Safe activity records present
     assert len(result.activity) > 0
     for act in result.activity:

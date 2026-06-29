@@ -131,7 +131,7 @@ def test_ui_analyze_triggers_offline_fixtures(monkeypatch) -> None:
     assert result.response.delay_days == 6
     assert len(result.dependency_nodes) == 5
     assert len(result.timeline_events) == 4
-    assert len(result.evidence_rows) == 7
+    assert len(result.evidence_rows) == 11
     assert len(result.activity) == 11
 
 
@@ -173,6 +173,27 @@ def test_ui_results_banner_root_causes_and_evidence(monkeypatch) -> None:
     all_actual_ids = evidence_ids.union(dependency_ids)
     for ev_id in expected_evidence_ids:
         assert ev_id in all_actual_ids, f"Expected ID {ev_id} missing from offline results"
+
+    expected_status_by_id = {
+        "MS-009-FTC": "AT_RISK",
+        "TEST-009-118": "ABORTED",
+        "TEST-009-121": "BLOCKED",
+        "DEF-009-042": "OPEN",
+        "PART-ACT-774": "AWAITING_DELIVERY",
+        "CR-184": "PENDING_REVIEW",
+        "MNT-009-015": "SCHEDULED",
+    }
+    evidence_status_by_id = {row.source_id: row.status for row in result.evidence_rows}
+    for source_id, expected_status in expected_status_by_id.items():
+        assert evidence_status_by_id[source_id] == expected_status
+
+    dependency_row_ids = {"DEP-009-001", "DEP-009-002", "DEP-009-003", "DEP-009-004"}
+    dependency_rows = [
+        row for row in result.evidence_rows if row.record_type == "schedule_dependency"
+    ]
+    assert {row.source_id for row in dependency_rows} == dependency_row_ids
+    assert all(row.status == "BLOCKING_LINK" for row in dependency_rows)
+    assert all(row.status != "UNKNOWN" for row in dependency_rows)
 
     # Verify no unrelated reference-screen data or N-numbers appear
     content_str = str(result.model_dump())
